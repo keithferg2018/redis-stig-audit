@@ -1,0 +1,82 @@
+[
+  {
+    "control_id": "1.1",
+    "title": "Use trusted Redis base images",
+    "profile": "Level 1",
+    "scored": true,
+    "category": "Image Security",
+    "automatable": true,
+    "nist_800_53": ["CM-6", "SI-7"],
+    "evidence_type": "image-supply-chain"
+  },
+  {
+    "control_id": "1.2",
+    "title": "Pin Redis images to specific versions or digests",
+    "profile": "Level 1",
+    "scored": true,
+    "category": "Image Security",
+    "automatable": true,
+    "nist_800_53": ["CM-2", "CM-6"],
+    "evidence_type": "image-supply-chain"
+  },
+  {
+    "control_id": "2.1",
+    "title": "Require authenticated administrative access",
+    "profile": "Level 1",
+    "scored": true,
+    "category": "Authentication",
+    "automatable": true,
+    "nist_800_53": ["AC-6", "IA-5"],
+    "evidence_type": "runtime-config"
+  },
+  {
+    "control_id": "2.2",
+    "title": "Enable and enforce Redis ACLs",
+    "profile": "Level 2",
+    "scored": true,
+    "category": "Authentication",
+    "automatable": true,
+    "nist_800_53": ["AC-2", "AC-3", "AC-6"],
+    "evidence_type": "runtime-config"
+  },
+  {
+    "control_id": "2.3",
+    "title": "Disable or tightly restrict dangerous administrative commands",
+    "profile": "Level 1",
+    "scored": true,
+    "category": "Configuration",
+    "automatable": true,
+    "nist_800_53": ["CM-7", "AC-6"],
+    "evidence_type": "runtime-config"
+  },
+  {
+    "control_id": "2.4",
+    "title": "Keep protected mode enabled unless compensating controls exist",
+    "profile": "Level 1",
+    "scored": true,
+    "category": "Configuration",
+    "automatable": true,
+    "nist_800_53": ["SC-7"],
+    "evidence_type": "runtime-config"
+  },
+  {
+    "control_id": "3.1",
+    "title": "Encrypt Redis traffic in transit where sensitive data crosses trust boundaries",
+    "profile": "Level 2",
+    "scored": true,
+    "category": "Transport Security",
+    "automatable": true,
+    "nist_800_53": ["SC-8"],
+    "evidence_type": "runtime-config"
+  },
+  {
+    "control_id": "7.1",
+    "title": "Drop unnecessary Linux capabilities",
+    "profile": "Level 2",
+    "scored": true,
+    "category": "Container Runtime",
+    "automatable": true,
+    "nist_800_53": ["CM-6", "CM-7"],
+    "evidence_type": "container-runtime"
+  }
+]
