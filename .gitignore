@@ -1,6 +1,52 @@
-__pycache__/
-*.pyc
+# Credentials — never commit
 .env
+*.key
+*.pem
+*.crt
+service-account*.json
+credentials*.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Audit output files
 output/*.json
+output/*.sarif
 output/*.sarif.json
+output/*.zip
 output/*.md
+output/*.csv
+*.csv
+
+# CVE data cache
+data/*.json
+data/*.gz
+
+# Evidence bundles
+*.zip
+
+# Internal / private documents — not for public release
+ROADMAP-PILOT-TO-REVENUE.md
+SECURITY-HARDENING-REPORT.md
+
+# Internal evidence packs and pre-submission reports
+evidence/
+reports/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store

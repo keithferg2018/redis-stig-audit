@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """redis-stig-audit — draft Redis container security audit tool."""
 import argparse
+import csv
+import io
 import json
 import os
 import sys
@@ -11,6 +13,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from runner import RedisRunner
 from checks import ALL_CHECKERS
+from mappings.frameworks import enrich_all
 from output import report
 from output.sarif import write_sarif
 from output.bundle import write_bundle
@@ -31,8 +34,10 @@ def parse_args():
     p.add_argument("--json", metavar="FILE", help="Write raw results to FILE")
     p.add_argument("--sarif", metavar="FILE", help="Write SARIF 2.1.0 results to FILE")
     p.add_argument("--bundle", metavar="FILE", help="Write evidence bundle (zip) to FILE")
+    p.add_argument("--csv", metavar="FILE", help="Write CSV results to FILE (includes NIST 800-171, CMMC, MITRE columns)")
     p.add_argument("--quiet", action="store_true")
     p.add_argument("--verbose", action="store_true")
+    p.add_argument("--skip-cve", action="store_true", help="Skip CVE/KEV vulnerability scan (faster, compliance-only)")
     return p.parse_args()
 
 
@@ -69,6 +74,66 @@ def summarize(results) -> dict:
     }
 
 
+def write_csv(filepath: str, results: list, target_info: dict) -> None:
+    """Write audit results to a CSV file suitable for spreadsheet analysis.
+
+    Columns follow the schema documented in docs/RUN_BENCHMARK.md:
+      Control_ID, Title, Severity, Result, Category, Description, Rationale,
+      CIS_Control, NIST_800_53, NIST_800_171, CMMC_Level,
+      MITRE_ATTACK, MITRE_D3FEND, Remediation, References
+    """
+    fieldnames = [
+        "Control_ID",
+        "Title",
+        "Severity",
+        "Result",
+        "Category",
+        "Actual",
+        "Expected",
+        "Description",
+        "Rationale",
+        "CIS_Control",
+        "NIST_800_53",
+        "NIST_800_171",
+        "CMMC_Level",
+        "MITRE_ATTACK",
+        "MITRE_D3FEND",
+        "Remediation",
+        "References",
+        "CVE_ID",
+        "KEV_Score",
+        "CVE_Remediation",
+        "Local_Path",
+    ]
+    with open(filepath, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
+        writer.writeheader()
+        for r in results:
+            writer.writerow({
+                "Control_ID": r.check_id,
+                "Title": r.title,
+                "Severity": r.severity.value,
+                "Result": r.status.value,
+                "Category": r.category,
+                "Actual": r.actual,
+                "Expected": r.expected,
+                "Description": r.description,
+                "Rationale": r.rationale,
+                "CIS_Control": r.cis_id or "",
+                "NIST_800_53": "; ".join(r.nist_800_53_controls),
+                "NIST_800_171": "; ".join(r.nist_800_171),
+                "CMMC_Level": str(r.cmmc_level) if r.cmmc_level is not None else "",
+                "MITRE_ATTACK": "; ".join(r.mitre_attack),
+                "MITRE_D3FEND": "; ".join(r.mitre_d3fend),
+                "Remediation": r.remediation,
+                "References": "; ".join(r.references),
+                "CVE_ID": "; ".join(r.cve_ids) if r.cve_ids else "",
+                "KEV_Score": r.kev_score or "",
+                "CVE_Remediation": r.cve_remediation or "",
+                "Local_Path": r.local_path or "",
+            })
+
+
 def main():
     args = parse_args()
     timestamp = datetime.now(timezone.utc).isoformat()
@@ -86,6 +151,26 @@ def main():
     results = []
     for checker_cls in ALL_CHECKERS:
         results.extend(checker_cls(runner).run())
+
+    # Enrich results with NIST 800-171, CMMC, and MITRE framework mappings
+    enrich_all(results)
+
+    # CVE/KEV vulnerability scan (appended after enrich_all so it is not enriched)
+    if not args.skip_cve:
+        from checks.cve_scanner import detect_redis_version, fetch_cve_data, load_kev_catalog, cve_to_check_result
+        cache_dir = os.path.join(os.path.dirname(__file__), "data")
+        os.makedirs(cache_dir, exist_ok=True)
+
+        version = detect_redis_version(runner)
+        if version:
+            print(f"[cve] Detected version: {version}")
+            kev = load_kev_catalog(cache_dir)
+            cves = fetch_cve_data("redis", version, cache_dir)
+            local_path = "/usr/local/bin/redis-server"
+            cve_result = cve_to_check_result(cves, kev, "redis", version, local_path)
+            results.append(cve_result)
+        else:
+            print("[cve] Could not detect version, skipping CVE scan")
 
     results = sorted(results, key=lambda r: (r.status.value, r.severity.value, r.check_id))
     target_info = build_target_info(args, runner, timestamp)
@@ -129,6 +214,10 @@ def main():
                 TOOL_VERSION,
             )
             print(f"[bundle] Written to {args.bundle}")
+
+    if args.csv:
+        write_csv(args.csv, results, target_info)
+        print(f"[csv]    Written to {args.csv}")
 
 
 if __name__ == "__main__":

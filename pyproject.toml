@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "redis-stig-audit"
+version = "0.3.0"
+description = "Redis container security audit tool for regulated environments"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+keywords = [
+    "redis",
+    "security",
+    "audit",
+    "cis-benchmark",
+    "nist",
+    "compliance",
+    "fedramp",
+    "cmmc",
+    "container-security",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: System :: Systems Administration",
+]
+
+# No third-party runtime dependencies — uses Python standard library only
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+]
+
+[project.scripts]
+redis-stig-audit = "audit:main"
+
+[project.urls]
+Homepage = "https://github.com/audit-forge/redis-stig-audit"
+Repository = "https://github.com/audit-forge/redis-stig-audit"
+"Bug Tracker" = "https://github.com/audit-forge/redis-stig-audit/issues"
+
+[tool.setuptools.packages.find]
+include = ["checks*", "mappings*", "output*"]
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

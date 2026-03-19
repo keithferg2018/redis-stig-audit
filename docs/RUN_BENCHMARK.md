@@ -88,13 +88,28 @@ python3 audit.py --mode docker --container redis --sarif output/results.sarif
 python3 audit.py --mode docker --container redis --bundle output/audit-bundle.zip
 ```
 
+### CSV output (with NIST 800-171, CMMC, and MITRE columns)
+
+```bash
+python3 audit.py --mode docker --container redis --csv output/results.csv
+```
+
+The CSV includes these compliance columns for each control:
+- `NIST_800_171` — NIST SP 800-171 Rev 2 control IDs (e.g. `3.13.1; 3.13.8`)
+- `CMMC_Level` — CMMC 2.0 level (1 or 2)
+- `MITRE_ATTACK` — ATT&CK technique IDs (e.g. `T1040; T1133`)
+- `MITRE_D3FEND` — D3FEND technique IDs (e.g. `D3-ET; D3-NI`)
+
+The CSV is compatible with Excel, Google Sheets, and any standard spreadsheet tool.
+
 ### All outputs in one run
 
 ```bash
 python3 audit.py --mode docker --container redis \
   --json output/results.json \
   --sarif output/results.sarif \
-  --bundle output/audit-bundle.zip
+  --bundle output/audit-bundle.zip \
+  --csv output/results.csv
 ```
 
 You can also use the Makefile shortcut:
