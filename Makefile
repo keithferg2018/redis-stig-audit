@@ -18,10 +18,22 @@ all-outputs:
 		--sarif output/results.sarif \
 		--bundle output/audit-bundle.zip
 
+fixtures-up:
+	bash test/run_fixtures.sh up
+
+fixtures-down:
+	bash test/run_fixtures.sh down
+
+fixture-audit:
+	bash test/run_fixtures.sh audit $(FIXTURE)
+
+fixture-audit-all:
+	bash test/run_fixtures.sh audit-all
+
 test:
 	$(PYTHON) -m unittest discover -s test -p 'test_*.py' -v
 
 test-unittest:
 	$(PYTHON) -m unittest discover -s test -p 'test_*.py' -v
 
-.PHONY: run json sarif bundle all-outputs test test-unittest
+.PHONY: run json sarif bundle all-outputs fixtures-up fixtures-down fixture-audit-all test test-unittest

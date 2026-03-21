@@ -1,0 +1,39 @@
+services:
+  redis-baseline:
+    image: redis:7.2-alpine
+    container_name: redis-baseline
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    ports:
+      - "6380:6379"
+    volumes:
+      - ./baseline/redis.conf:/usr/local/etc/redis/redis.conf:ro
+
+  redis-vulnerable:
+    image: redis:7.2-alpine
+    container_name: redis-vulnerable
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    ports:
+      - "6381:6379"
+    volumes:
+      - ./vulnerable/redis.conf:/usr/local/etc/redis/redis.conf:ro
+
+  redis-hardened:
+    image: redis:7.2-alpine
+    container_name: redis-hardened
+    user: "999:999"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    cpus: 1.0
+    tmpfs:
+      - /data:uid=999,gid=999,mode=770
+      - /tmp:uid=999,gid=999,mode=1777
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    ports:
+      - "6382:6379"
+    volumes:
+      - ./hardened/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - ./hardened/users.acl:/usr/local/etc/redis/users.acl:ro

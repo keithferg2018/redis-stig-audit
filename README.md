@@ -128,6 +128,26 @@ See [docs/CVE_SCANNING.md](docs/CVE_SCANNING.md) for full details.
 
 ---
 
+## Repeatable Live Validation
+
+The repo now includes a simple Docker-based fixture set for repeatable manual validation:
+- `baseline`
+- `vulnerable`
+- `hardened`
+
+Quick start:
+
+```bash
+make fixtures-up
+make fixture-audit-all
+make fixtures-down
+```
+
+Per-fixture artifacts are written to `output/fixtures/`.
+See [test/README.md](test/README.md) for the full workflow.
+
+---
+
 ## Coverage
 
 ### Configuration Checks

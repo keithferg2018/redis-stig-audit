@@ -1,0 +1,1 @@
+user default on >Str0ngRedisPass!2026 ~* &* -@all +ping +info +config|get +acl|list

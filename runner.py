@@ -71,15 +71,16 @@ class RedisRunner:
         return res.returncode == 0 and "PONG" in res.stdout
 
     def config_get(self, *patterns: str) -> dict[str, str]:
-        res = self.redis_cli("CONFIG", "GET", *patterns)
-        if res.returncode != 0:
-            return {}
-        lines = [line for line in res.stdout.splitlines() if line.strip()]
         out = {}
-        for i in range(0, len(lines), 2):
-            key = lines[i]
-            val = lines[i + 1] if i + 1 < len(lines) else ""
-            out[key] = val
+        for pattern in patterns:
+            res = self.redis_cli("CONFIG", "GET", pattern)
+            if res.returncode != 0:
+                continue
+            lines = [line for line in res.stdout.splitlines() if line.strip()]
+            for i in range(0, len(lines), 2):
+                key = lines[i]
+                val = lines[i + 1] if i + 1 < len(lines) else ""
+                out[key] = val
         return out
 
     def acl_list(self) -> list[str]:
