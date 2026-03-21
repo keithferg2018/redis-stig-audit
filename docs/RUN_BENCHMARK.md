@@ -102,6 +102,17 @@ The CSV includes these compliance columns for each control:
 
 The CSV is compatible with Excel, Google Sheets, and any standard spreadsheet tool.
 
+### Conditional CSV fields
+
+Some CSV columns only apply to certain finding types:
+- `CVE_ID`, `KEV_Score`, and `CVE_Remediation`
+  - `not_scanned` when `--skip-cve` is used
+  - `not_applicable` for non-vulnerability findings
+  - populated values for the version/CVE finding when CVE scanning runs
+- `Local_Path`
+  - populated with a real binary/path when available (for example the Redis server binary in CVE findings)
+  - otherwise set to a scope hint such as `runtime-config` or `container-inspect` instead of being left blank
+
 ### All outputs in one run
 
 ```bash
