@@ -50,3 +50,5 @@ reports/
 
 # macOS
 .DS_Store
+
+output/fixtures/

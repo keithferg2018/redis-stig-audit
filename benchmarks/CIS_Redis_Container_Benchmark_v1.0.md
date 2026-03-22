@@ -193,6 +193,41 @@ Varies by image and runtime.
 
 ---
 
+### 1.5 Generate and retain an SBOM for Redis images
+
+**Profile:** Level 2 | **Scored**
+
+#### Description
+Each production Redis image should have a Software Bill of Materials (SBOM) generated and retained with the build or release artifact so component inventory can be reviewed during audits and vulnerability response.
+
+#### Rationale
+Vulnerability response is slowed when operators cannot quickly determine whether an image includes an affected library or package. SBOMs improve supply-chain visibility and speed impact analysis for newly disclosed vulnerabilities.
+
+#### Impact
+Requires CI/CD integration and artifact retention.
+
+#### Audit
+```bash
+syft redis:7.2.4 -o spdx-json
+# or
+trivy image --format cyclonedx redis:7.2.4
+```
+
+#### Remediation
+- Generate an SPDX or CycloneDX SBOM during image build
+- Store the SBOM with build artifacts or in the internal registry metadata
+- Retain SBOMs long enough to support annual audits and incident response
+
+#### Default Value
+SBOM generation is not performed by default.
+
+#### References
+- NIST SP 800-218 (SSDF)
+- Executive Order 14028 software supply chain guidance
+- NIST SP 800-53 Rev 5: CM-8, SI-7
+
+---
+
 ## Section 2: Core Redis Security Configuration
 
 ### 2.1 Require authenticated administrative access
@@ -480,6 +515,45 @@ Not enforced by default. Depends on deployment configuration.
 
 ---
 
+### 3.4 Do not expose the Redis cluster bus or Sentinel ports beyond trusted peers
+
+**Profile:** Level 2 | **Scored**
+
+#### Description
+Redis cluster bus ports and Sentinel administration ports must be reachable only by explicitly authorized peers and operators. These control-plane interfaces must not be broadly exposed.
+
+#### Rationale
+Cluster bus and Sentinel traffic can reveal topology information and may enable unauthorized cluster manipulation if exposed beyond the intended trust boundary.
+
+#### Impact
+Requires explicit service and firewall design for clustered or Sentinel-based deployments.
+
+#### Audit
+```bash
+# Check exposed ports for cluster bus / Sentinel
+ss -ltnp | grep -E '6379|16379|26379'
+
+# Docker / Kubernetes exposure review
+docker inspect <container> | jq '.[0].NetworkSettings.Ports'
+kubectl get svc -A | grep -E '16379|26379'
+```
+
+#### Remediation
+- Restrict cluster bus traffic to Redis cluster members only
+- Restrict Sentinel ports to approved operator and peer networks
+- Do not publish cluster bus or Sentinel ports through Internet-facing load balancers
+- Apply network policies or firewalls that separate client traffic from control-plane traffic
+
+#### Default Value
+Not restricted by default.
+
+#### References
+- Redis Cluster documentation
+- Redis Sentinel documentation
+- NIST SP 800-53 Rev 5: SC-7, AC-4
+
+---
+
 ## Section 4: Persistence, Logging, and Auditability
 
 ### 4.1 Configure persistence intentionally
@@ -620,6 +694,39 @@ No log forwarding is configured by default.
 
 ---
 
+### 4.5 Encrypt and govern Redis backups and exported persistence artifacts
+
+**Profile:** Level 1 | **Not Scored**
+
+#### Description
+Backups, snapshots, copied RDB files, and exported AOF artifacts must be encrypted at rest, access controlled, and retained according to documented recovery and audit requirements.
+
+#### Rationale
+Even if the live Redis runtime is hardened, copied persistence artifacts often become the easiest path to data exposure. Backup governance is especially important in regulated environments where operational copies may outlive the originating container.
+
+#### Impact
+Requires backup storage controls and retention policy review.
+
+#### Audit
+- Verify backup destination and encryption settings for object storage, block storage snapshots, or backup tools
+- Confirm backup access is restricted to approved administrative roles
+- Review documented backup retention and destruction timelines
+- Confirm test restoration procedures exist
+
+#### Remediation
+- Enable encryption at rest for backup targets
+- Restrict backup access using least-privilege IAM or filesystem permissions
+- Define and document retention, rotation, and destruction periods
+- Periodically test restoration of Redis persistence artifacts into an isolated environment
+
+#### Default Value
+Backup encryption and retention governance are not enforced by default.
+
+#### References
+- NIST SP 800-53 Rev 5: CP-9, SC-28, MP-6
+
+---
+
 ## Section 5: High Availability / Replication Security
 
 ### 5.1 Secure replication paths
@@ -689,6 +796,41 @@ Cluster and Sentinel ports use no authentication by default in some configuratio
 #### References
 - Redis Sentinel documentation
 - NIST SP 800-53 Rev 5: SC-7, AC-17
+
+---
+
+### 5.3 Require authenticated and authorized replica relationships
+
+**Profile:** Level 2 | **Scored**
+
+#### Description
+Replica nodes must authenticate to their upstream Redis nodes and should use dedicated credentials or ACL identities appropriate to replication, rather than broad shared administrative credentials.
+
+#### Rationale
+Replication links often inherit highly privileged trust. Weak or shared authentication for replicas expands lateral movement risk and complicates credential rotation.
+
+#### Impact
+Requires replication credential management and testing during failover events.
+
+#### Audit
+```bash
+redis-cli CONFIG GET masterauth
+redis-cli CONFIG GET masteruser
+redis-cli INFO replication
+```
+
+#### Remediation
+- Configure `masterauth` or ACL-based replication credentials as appropriate
+- Prefer dedicated replication users over shared default-user credentials
+- Rotate replication credentials under change control and test replica recovery after rotation
+
+#### Default Value
+Replica authentication may be absent or may rely on broad shared credentials.
+
+#### References
+- Redis replication documentation
+- Redis ACL documentation
+- NIST SP 800-53 Rev 5: IA-5, AC-6
 
 ---
 
@@ -794,6 +936,39 @@ No automatic credential rotation is provided by Redis.
 #### References
 - NIST SP 800-53 Rev 5: IA-5(1)
 - FedRAMP credential management requirements
+
+---
+
+### 6.4 Separate application, administrative, and replication identities
+
+**Profile:** Level 2 | **Scored**
+
+#### Description
+Redis deployments should use separate identities for application access, administrative operations, and replication. Shared all-purpose credentials should be avoided.
+
+#### Rationale
+Identity separation improves least privilege, auditability, and blast-radius reduction. It also allows safer rotation and clearer incident response when a single credential class is suspected of compromise.
+
+#### Impact
+Requires ACL design and client configuration changes.
+
+#### Audit
+```bash
+redis-cli ACL LIST
+redis-cli ACL GETUSER default
+```
+
+#### Remediation
+- Create dedicated ACL users for applications, operators, and replication
+- Limit command categories and key patterns per identity
+- Disable or tightly constrain the default user where operationally feasible
+
+#### Default Value
+Many Redis deployments rely on a single shared secret or the default user.
+
+#### References
+- Redis ACL documentation
+- NIST SP 800-53 Rev 5: AC-2, AC-3, AC-6
 
 ---
 
@@ -1013,6 +1188,44 @@ No resource limits are set by default.
 #### References
 - CIS Docker Benchmark
 - NIST SP 800-53 Rev 5: SC-6, SI-17
+
+---
+
+### 7.6 Apply a restrictive seccomp/AppArmor/SELinux profile
+
+**Profile:** Level 2 | **Scored**
+
+#### Description
+Redis containers should run with a restrictive syscall and mandatory access control profile, such as Docker default seccomp plus AppArmor, or Kubernetes/AppArmor/SELinux equivalents.
+
+#### Rationale
+If the Redis process is compromised, syscall filtering and mandatory access controls help limit post-exploitation activity and container escape attempts.
+
+#### Impact
+Requires validation in environments with custom modules, debugging tools, or unusual runtime behaviors.
+
+#### Audit
+```bash
+# Docker
+docker inspect <container> | jq '.[0].HostConfig.SecurityOpt'
+
+# Kubernetes
+kubectl get pod <pod> -o jsonpath='{.metadata.annotations}{.spec.securityContext.seLinuxOptions}'
+```
+
+#### Remediation
+- Use the default Docker seccomp profile at minimum
+- Apply AppArmor profiles such as `runtime/default` where available
+- Enforce SELinux in confined mode on supported platforms
+- Document approved exceptions for troubleshooting containers
+
+#### Default Value
+Protective profiles may be partially enabled by the runtime, but are often not explicitly enforced at deployment level.
+
+#### References
+- CIS Docker Benchmark
+- Kubernetes Pod Security Standards
+- NIST SP 800-53 Rev 5: SI-7, CM-7
 
 ---
 
