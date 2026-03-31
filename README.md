@@ -206,7 +206,7 @@ Every control maps to:
 | Level 1 | 7 |
 | Level 2 | 18 |
 
-The complete matrices are in `mappings/CMMC-compliance-matrix.csv` and `mappings/MITRE-mappings.csv`.
+The complete mapping data is in `mappings/control-matrix.json` and `mappings/frameworks.py`.
 
 ---
 
@@ -357,10 +357,12 @@ redis_audit:
 ## Running Tests
 
 ```bash
-python3 -m pytest test/ -v
+make test
+# or without make:
+python3 -m unittest discover -s test -p 'test_*.py' -v
 ```
 
-The test suite uses a `FakeRunner` mock — no live Redis instance required for unit tests.
+The test suite uses a `FakeRunner` mock — no live Redis instance required for unit tests. No third-party packages needed.
 
 ---
 
